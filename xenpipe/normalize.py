@@ -2,6 +2,8 @@ import hashlib, io, json, os, re
 from pathlib import Path
 from PIL import Image
 
+OPENVID_DATASET = "nkp37/OpenVid-1M"
+
 TEXT_COLUMNS=("text","content","document","prompt","instruction")
 RESPONSE_COLUMNS=("response","answer","output","completion")
 CAPTION_COLUMNS=("caption","text","description","prompt","detailed_caption","brief_caption","video_caption")
@@ -59,6 +61,18 @@ def resolve_video(value,dataset_id,revision=None,cache_dir=None):
     if isinstance(value,str):
         if value.startswith(("http://","https://")): return value
         if os.path.exists(value): return value
+        if dataset_id == OPENVID_DATASET:
+            from .openvid import extract_openvid_video
+            from huggingface_hub import HfApi
+            if revision is None:
+                revision = HfApi().dataset_info(dataset_id).sha
+            return extract_openvid_video(
+                value,
+                dataset_id,
+                revision,
+                cache_dir=cache_dir,
+                token=os.getenv("HF_TOKEN"),
+            )
         from huggingface_hub import hf_hub_download
         return hf_hub_download(
             repo_id=dataset_id,
