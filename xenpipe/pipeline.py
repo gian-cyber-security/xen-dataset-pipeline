@@ -39,7 +39,7 @@ def iter_xen_samples(dataset_id,*,target,split="train",revision=None,config=None
             seen.add(key); p=asdict(base); p["target"]=target
             sample={"type":"video","video_ref":ref,"caption":caption,"fingerprint":key,"provenance":p}
             if resolve_media:
-                try: sample["video"]=resolve_video(ref,dataset_id,revision,cache_dir)
+                try: sample["video"]=resolve_video(ref,dataset_id,base.revision,cache_dir)
                 except Exception: continue
             yield sample
         count+=1
