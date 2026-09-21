@@ -100,16 +100,42 @@ pytest
 
 ## Recommended video starting point
 
-For a first GEN1-V pipeline test, Hugging Face `nkp37/OpenVid-1M` exposes `video` filename and `caption` columns, declares CC BY 4.0, and is tagged for text-to-video/image-to-video research. Its dataset card also says the videos were collected from other public datasets, so users must still follow the original-source licenses and terms; the Hub declaration is not blanket legal clearance.
+For a first GEN1-V pipeline test, Hugging Face `nkp37/OpenVid-1M` exposes `video` and `caption` fields and the inspected revision can be recorded by the pipeline. Its declared dataset license is CC BY 4.0. Its dataset card also says the videos were collected from other public datasets, so users must still follow the original-source licenses and terms; the Hub declaration is not blanket legal clearance.
 
-Example:
+Fast metadata inspection (does **not** download video files):
 
 ```bash
 xenpipe inspect-dataset --dataset nkp37/OpenVid-1M
 xenpipe stream --dataset nkp37/OpenVid-1M --target gen1-v --media-column video --caption-column caption --max-samples 3 --show 3
 ```
 
-For filename-based Hub video datasets, the video adapter downloads only requested files into a temporary XEN cache. It does not create a permanent processed corpus. Use `xenpipe clean-cache` when finished.
+If you explicitly want to resolve/download the three videos:
+
+```bash
+xenpipe stream --dataset nkp37/OpenVid-1M --target gen1-v --media-column video --caption-column caption --max-samples 3 --show 3 --resolve-media
+```
+
+### GEN1-V performance
+
+GEN1-V training uses **lazy video resolution + bounded parallel prefetch**. The dataset iterator first produces lightweight references, then a small background worker pool downloads only the upcoming samples. This avoids the old behavior where merely inspecting three samples could block on remote video downloads.
+
+Defaults:
+- 4 background download workers
+- 8 samples in flight
+- temporary Hugging Face/XEN cache
+- ordered delivery to the trainer
+- no permanent processed dataset is created
+
+Tune the workers/window for your machine:
+
+```bash
+export XEN_PREFETCH_WORKERS=6
+export XEN_PREFETCH_SIZE=12
+```
+
+For Colab, start around 4 workers / 8 prefetched samples. Increasing them does **not** guarantee faster training; network bandwidth and HF server throughput can become the bottleneck.
+
+For direct training, use `xenpipe.training.iter_training_samples` or `stream_to_trainer`. The training adapter resolves video on demand and prefetches in the background.
 
 ## Inspect a dataset
 
