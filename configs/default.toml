@@ -1,0 +1,15 @@
+[license]
+strict = true
+allowed = ["cc0-1.0","cc-by-4.0","cc-by-3.0","cc-by-2.0","unlicense","mit","bsd-2-clause","bsd-3-clause","apache-2.0"]
+
+[streaming]
+enabled = true
+cache_dir = ".xen-cache"
+
+[image]
+size = 256
+
+[video]
+frames = 8
+size = 96
+fps = 4
