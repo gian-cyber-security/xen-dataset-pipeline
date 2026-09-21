@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "xen-dataset-pipeline"
+version = "0.1.0"
+description = "Streaming, provenance-aware dataset pipeline for the XEN AI model family"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "Apache-2.0"}
+dependencies = ["datasets>=4.0.0", "huggingface_hub>=0.34.0", "pillow>=10.0.0", "numpy>=2.0.0"]
+
+[project.optional-dependencies]
+video = ["torch>=2.4.0", "torchcodec>=0.7.0"]
+dev = ["pytest>=8.0.0", "ruff>=0.12.0"]
+
+[project.scripts]
+xenpipe = "xenpipe.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["xenpipe*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
