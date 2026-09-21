@@ -105,14 +105,26 @@ def _parse_zip64_eocd(tail: bytes) -> tuple[int, int]:
     return cd_offset, cd_size
 
 
+def _suffix_get(url: str, size: int, token: str | None = None) -> bytes:
+    headers = {"Range": f"bytes=-{size}"}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"}
+    r = _SESSION.get(url, headers=headers, timeout=_RANGE_TIMEOUT)
+    r.raise_for_status()
+    if r.status_code != 206:
+        raise RuntimeError(f"Expected HTTP 206 for suffix Range request, got {r.status_code}")
+    if len(r.content) != size:
+        raise RuntimeError(f"Suffix range length mismatch: {len(r.content)} != {size}")
+    return r.content
+
+
 def _central_directory(dataset_id: str, revision: str, part: int, root: Path, token: str | None) -> bytes:
     cache = root / f"part_{part}_central.bin"
     if cache.exists():
         return cache.read_bytes()
 
     url = _zip_url(dataset_id, revision, part)
-    # 16 MiB tail is small relative to OpenVid ZIPs and covers the EOCD/locator.
-    tail = _range_get(url, -16 * 1024 * 1024, -1, token)
+    tail = _suffix_get(url, 16 * 1024 * 1024, token)
     cd_offset, cd_size = _parse_zip64_eocd(tail)
     cd = _range_get(url, cd_offset, cd_offset + cd_size - 1, token)
     cache.write_bytes(cd)
