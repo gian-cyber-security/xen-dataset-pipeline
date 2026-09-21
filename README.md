@@ -98,6 +98,19 @@ pip install -e ".[dev]"
 pytest
 ```
 
+## Recommended video starting point
+
+For a first GEN1-V pipeline test, Hugging Face `nkp37/OpenVid-1M` exposes `video` filename and `caption` columns, declares CC BY 4.0, and is tagged for text-to-video/image-to-video research. Its dataset card also says the videos were collected from other public datasets, so users must still follow the original-source licenses and terms; the Hub declaration is not blanket legal clearance.
+
+Example:
+
+```bash
+xenpipe inspect-dataset --dataset nkp37/OpenVid-1M
+xenpipe stream --dataset nkp37/OpenVid-1M --target gen1-v --media-column video --caption-column caption --max-samples 3 --show 3
+```
+
+For filename-based Hub video datasets, the video adapter downloads only requested files into a temporary XEN cache. It does not create a permanent processed corpus. Use `xenpipe clean-cache` when finished.
+
 ## Inspect a dataset
 
 ```bash
