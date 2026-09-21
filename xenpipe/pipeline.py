@@ -1,11 +1,10 @@
 from dataclasses import asdict
-from typing import Any
 from .streaming import authorized_stream
 from .normalize import *
 
 TARGETS={"gen1-t":"text","gen1-t-code":"text","gen1-t-fast":"text","gen1-t-plan":"text","gen1-i":"image","gen1-v":"video"}
 
-def iter_xen_samples(dataset_id,*,target,split="train",revision=None,config=None,token=None,text_column=None,response_column=None,media_column=None,caption_column=None,max_samples=None,strict_license=True,allowed_licenses=None,deduplicate=True,image_size=None):
+def iter_xen_samples(dataset_id,*,target,split="train",revision=None,config=None,token=None,text_column=None,response_column=None,media_column=None,caption_column=None,max_samples=None,strict_license=True,allowed_licenses=None,deduplicate=True,image_size=None,cache_dir=None):
     if target not in TARGETS: raise ValueError(f"Unknown target: {target}")
     ds,base=authorized_stream(dataset_id,split,revision,config,token,strict_license,allowed_licenses)
     seen=set(); count=0
@@ -13,7 +12,7 @@ def iter_xen_samples(dataset_id,*,target,split="train",revision=None,config=None
         if TARGETS[target]=="text":
             instruction,response=normalize_text_record(row,text_column,response_column)
             if not instruction: continue
-            key=fingerprint_text(instruction+"\\n"+(response or ""))
+            key=fingerprint_text(instruction+"\n"+(response or ""))
             if deduplicate and key in seen: continue
             seen.add(key); p=asdict(base); p["target"]=target
             yield {"type":"text","instruction":instruction,"response":response,"fingerprint":key,"provenance":p}
@@ -33,8 +32,11 @@ def iter_xen_samples(dataset_id,*,target,split="train",revision=None,config=None
             if col not in row: continue
             caption=normalize_caption(row,caption_column)
             if not caption: continue
-            key=fingerprint_text(f"{dataset_id}|{base.revision}|{count}")
-            p=asdict(base); p["target"]=target
-            yield {"type":"video","video":row[col],"caption":caption,"fingerprint":key,"provenance":p}
+            try: video=resolve_video(row[col],dataset_id,revision,cache_dir)
+            except Exception: continue
+            key=fingerprint_text(f"{dataset_id}|{base.revision}|{count}|{row.get(col)}")
+            if deduplicate and key in seen: continue
+            seen.add(key); p=asdict(base); p["target"]=target
+            yield {"type":"video","video":video,"caption":caption,"fingerprint":key,"provenance":p}
         count+=1
         if max_samples is not None and count>=max_samples: break
