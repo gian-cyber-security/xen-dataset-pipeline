@@ -27,11 +27,15 @@ def _iter_video_prefetched(samples: Iterator[dict[str, Any]], dataset_id: str, *
                     sample=next(source)
                 except StopIteration:
                     return
+                sample_revision = (
+                    revision
+                    or sample.get("provenance", {}).get("revision")
+                )
                 pending.append((sample,pool.submit(
                     resolve_video,
                     sample["video_ref"],
                     dataset_id,
-                    revision,
+                    sample_revision,
                     cache_dir,
                 )))
 
