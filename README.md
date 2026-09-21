@@ -115,6 +115,22 @@ If you explicitly want to resolve/download the three videos:
 xenpipe stream --dataset nkp37/OpenVid-1M --target gen1-v --media-column video --caption-column caption --max-samples 3 --show 3 --resolve-media
 ```
 
+### OpenVid-1M large-ZIP optimization
+
+OpenVid-1M is special: its `video` column can contain a filename that lives inside an `OpenVidHD_part_*.zip`, rather than a standalone file at the dataset root. For this dataset, GEN1-V resolution uses a ZIP64-aware HTTP Range extractor instead of trying to download the multi-gigabyte archive.
+
+The resolver:
+- downloads the small `OpenVidHD.json` index and builds a filename-to-part map
+- downloads each part's ZIP central directory once into the XEN cache
+- uses HTTP Range requests to fetch only the requested ZIP member
+- supports ZIP64 metadata and Deflate-compressed members
+- validates the extracted bytes with the declared size and CRC32
+- stores only the requested MP4 in the temporary cache
+
+For example, the tested OpenVid video `---_iRTHryQ_13_0to241.mp4` is inside part 8. Its ZIP member is about 4 MB, so the resolver can fetch the member without downloading the roughly 46.5 GiB part-8 archive.
+
+This optimization is specific to OpenVid's archive layout. Other datasets continue to use the normal Hugging Face video resolver.
+
 ### GEN1-V performance
 
 GEN1-V training uses **lazy video resolution + bounded parallel prefetch**. The dataset iterator first produces lightweight references, then a small background worker pool downloads only the upcoming samples. This avoids the old behavior where merely inspecting three samples could block on remote video downloads.
