@@ -108,7 +108,7 @@ def _parse_zip64_eocd(tail: bytes) -> tuple[int, int]:
 def _suffix_get(url: str, size: int, token: str | None = None) -> bytes:
     headers = {"Range": f"bytes=-{size}"}
     if token:
-        headers["Authorization"] = f"Bearer {token}"}
+        headers["Authorization"] = f"Bearer {token}"
     r = _SESSION.get(url, headers=headers, timeout=_RANGE_TIMEOUT)
     r.raise_for_status()
     if r.status_code != 206:
